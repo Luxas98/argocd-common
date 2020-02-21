@@ -1,0 +1,11 @@
+- op: add
+  path: /metadata/annotations
+  value:
+    getambassador.io/config: |
+      ---
+      apiVersion: ambassador/v1
+      kind:  Module
+      name:  api-gateway-ambassador
+      ambassador_id: api-gateway
+      config:
+        diag_port: 8877

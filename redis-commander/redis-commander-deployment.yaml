@@ -1,0 +1,38 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: redis-commander
+  name: redis-commander
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-commander
+  template:
+    metadata:
+      labels:
+        app: redis-commander
+    spec:
+      containers:
+      - env:
+        - name: REDIS_HOSTS
+          value: redis
+        image: rediscommander/redis-commander
+        imagePullPolicy: Always
+        name: redis-commander
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: redis-commander
+  name: redis-commander
+spec:
+  ports:
+  - port: 8081
+    protocol: TCP
+    targetPort: 8081
+  selector:
+    app: redis-commander
+  type: NodePort

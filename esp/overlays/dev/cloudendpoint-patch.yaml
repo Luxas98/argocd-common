@@ -1,0 +1,6 @@
+- op: replace
+  path: /spec/targetIngress/name
+  value: esp-gateway-ingress
+- op: replace
+  path: /spec/targetIngress/namespace
+  value: esp-gateway

@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: custom-metrics
+
+resources:
+  - ./adapter.old.yaml
+
+secretGenerator:
+  - name: stackdriver-metrics-secret
+    type: Opaque
+    files:
+      - key.json=./stackdriver-metrics-secret.json
+
+patchesJson6902:
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: custom-metrics-stackdriver-adapter
+      namespace: custom-metrics
+    path: ./stackdriver-metrics-sa-patch.yaml

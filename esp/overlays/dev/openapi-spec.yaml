@@ -1,0 +1,50 @@
+swagger: "2.0"
+info:
+  description: "Google Cloud Development API."
+  title: "dev API"
+  version: "1.0.0"
+host: "{{.Endpoint}}"
+x-google-endpoints:
+  - name: "{{.Endpoint}}"
+    target: "{{.Target}}"
+consumes:
+  - "application/json"
+produces:
+  - "application/json"
+schemes:
+  # Uncomment the next line if you configure SSL for this API.
+  - "https"
+  # - "http"
+paths:
+  "/hello-world":
+    get:
+      operationId: helloGet
+      description: "hello world test endpoint"
+      responses:
+        200:
+          description: "hello world response"
+definitions:
+  apiMessage:
+    type: "object"
+    properties:
+      message:
+        type: "string"
+  authInfoResponse:
+    properties:
+      id:
+        type: "string"
+      email:
+        type: "string"
+
+securityDefinitions:
+  api_key:
+    type: "apiKey"
+    name: "key"
+    in: "query"
+  firebase:
+    authorizationUrl: ""
+    flow: "implicit"
+    type: "oauth2"
+    x-google-issuer: "https://securetoken.google.com/dev"
+    x-google-jwks_uri: "https://www.googleapis.com/service_accounts/v1/metadata/x509/securetoken@system.gserviceaccount.com"
+    x-google-audiences: "dev"

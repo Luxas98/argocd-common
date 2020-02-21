@@ -1,0 +1,30 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: api-gateway-ingress
+  labels:
+    app: api-gateway
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    certmanager.k8s.io/cluster-issuer: "letsenrypt-cert-issuer"
+    certmanager.k8s.io/acme-challenge-type: http01
+    ingress.kubernetes.io/ssl-redirect: "true" # "false"
+    nginx.ingress.kubernetes.io/proxy-body-size: 100m
+    # sidecar.istio.io/inject: "false"
+    # nginx.ingress.kubernetes.io/service-upstream: "true"
+    # nginx.ingress.kubernetes.io/upstream-vhost: api-gateway.api-gateway.svc.cluster.local
+spec:
+  backend:
+    serviceName: api-gateway-esp
+    servicePort: 80
+  rules:
+    - http:
+        paths:
+          - path: /*
+            backend:
+              # TODO: change to
+              # serviceName: istio-ingressgateway
+              serviceName: esp-gateway
+              servicePort: 80
+  tls:
+    - secretName: platform-tls-http01

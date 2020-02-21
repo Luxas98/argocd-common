@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # - ambassador-v0.yaml
+  # - ambassador-rbac.yaml
+  - crds.yaml
+  - cluster-role.yaml

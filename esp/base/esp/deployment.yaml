@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: esp-gateway
+  labels:
+    app: esp-gateway
+spec:
+  # replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: esp-gateway
+  template:
+    spec:
+      containers:
+      - name: esp
+        image: gcr.io/endpoints-release/endpoints-runtime:1.35
+        args: [
+          # "-n=/etc/nginx/custom/nginx.conf",
+          # "--ssl_port=443",
+          "--http_port", "8081",
+          "--backend", "$(BACKEND_HOST):$(BACKEND_PORT)",
+          "--service", "$(SERVICE_HOST)",
+          "--rollout_strategy", "managed",
+          "--service_account_key", "/etc/nginx/sa/key.json",
+          "--version", "$(SERVICE_VERSION)",
+          "--healthz", "healthz",
+        ]
+        envFrom:
+          - configMapRef:
+              name: esp-config
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 20
+          timeoutSeconds: 1
+        ports:
+        - containerPort: 8081
+        resources:
+          limits:
+            cpu: 500m
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        volumeMounts:
+        - name: google-cloud-key
+          mountPath: /etc/nginx/sa
+      volumes:
+      - name: google-cloud-key
+        secret:
+          secretName: google-cloud-creds

@@ -1,0 +1,19 @@
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  name: platform-tls-http01
+spec:
+  secretName: platform-tls-http01
+  issuerRef:
+    # kind: Issuer
+    kind: ClusterIssuer
+    name: letsenrypt-cert-issuer
+  commonName: "dev.endpoints.<DEV-PROJECT-ID>.cloud.goog"
+  dnsNames:
+  - dev.endpoints.<DEV-PROJECT-ID>.cloud.goog
+  acme:
+    config:
+    - http01:
+        ingressClass: nginx
+      domains:
+        - dev.endpoints.<DEV-PROJECT-ID>.cloud.goog

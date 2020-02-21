@@ -1,0 +1,118 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: ambassador-admin
+  name: ambassador-admin
+spec:
+  type: NodePort
+  ports:
+    - name: ambassador-admin
+      port: 8877
+      targetPort: 8877
+  selector:
+    service: ambassador
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: ambassador-main
+rules:
+  - apiGroups: [""]
+    resources:
+      - namespaces
+      - services
+      - secrets
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ambassador-main
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: ambassador-main
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ambassador-main
+subjects:
+  - kind: ServiceAccount
+    name: ambassador-main
+    namespace: user-auth-gateway
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ambassador
+  labels:
+    service: ambassador
+spec:
+  selector:
+    matchLabels:
+      service: ambassador
+  replicas: 3
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+        "consul.hashicorp.com/connect-inject": "false"
+      labels:
+        service: ambassador
+    spec:
+      serviceAccountName: ambassador-main
+      containers:
+        - name: ambassador
+          image: quay.io/datawire/ambassador:0.50.3
+          resources:
+            limits:
+              cpu: 1
+              memory: 400Mi
+            requests:
+              cpu: 200m
+              memory: 100Mi
+          env:
+            - name: AMBASSADOR_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            # - name: AMBASSADOR_ID
+            #   value: api-proxy
+          envFrom:
+            - configMapRef:
+                name: ambassador-config
+          ports:
+            - name: http
+              containerPort: 80
+            - name: https
+              containerPort: 443
+            - name: admin
+              containerPort: 8877
+          livenessProbe:
+            httpGet:
+              path: /ambassador/v0/check_alive
+              port: 8877
+            initialDelaySeconds: 30
+            periodSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /ambassador/v0/check_ready
+              port: 8877
+            initialDelaySeconds: 30
+            periodSeconds: 3
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ambassador
+spec:
+  type: NodePort
+  externalTrafficPolicy: Local
+  ports:
+    - port: 80
+  selector:
+    service: ambassador

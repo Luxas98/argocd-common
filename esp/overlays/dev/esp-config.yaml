@@ -1,0 +1,9 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  labels:
+    app: esp-gateway
+  name: esp-config
+data:
+  SERVICE_HOST: "dev.endpoints.<DEV-PROJECT-ID>.cloud.goog"
+  SERVICE_VERSION: "2020-01-01r0"

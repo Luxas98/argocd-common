@@ -1,0 +1,6 @@
+- op: add
+  path: /spec/clientConfig
+  value:
+    service:
+      caBundle: "..."
+      name: cloud-endpoints-controller

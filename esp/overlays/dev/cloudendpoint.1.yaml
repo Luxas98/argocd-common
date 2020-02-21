@@ -1,0 +1,13 @@
+apiVersion: ctl.isla.solutions/v1
+kind: CloudEndpoint
+metadata:
+  # name: api-gateway-endpoint
+  name: dev # this makes the part of the endpoints domain
+spec:
+  project: dev
+  targetIngress:
+    name: esp-gateway-ingress
+    namespace: esp-gateway
+  openAPISpecConfigMap:
+    name: openapi-spec
+    key: spec

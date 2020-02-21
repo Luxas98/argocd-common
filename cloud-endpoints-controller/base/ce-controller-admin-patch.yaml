@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloud-endpoints-controller
+  namespace: metacontroller
+  labels:
+    app: cloud-endpoints-controller
+spec:
+  template:
+    spec:
+      containers:
+        - name: cloud-endpoints-controller
+          env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /var/secrets/sa/key.json
+          volumeMounts:
+            - name: endpoints-admin-key
+              mountPath: /var/secrets/sa
+      volumes:
+        - name: endpoints-admin-key
+          secret:
+            secretName: endpoints-admin-creds

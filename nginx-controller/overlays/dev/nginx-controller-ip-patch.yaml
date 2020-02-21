@@ -1,0 +1,5 @@
+- op: add
+  path: /spec/loadBalancerIP
+  value: {cluster-ip}
+- op: remove
+  path: /spec/clusterIP

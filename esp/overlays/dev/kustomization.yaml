@@ -1,0 +1,34 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: esp-gateway
+
+bases:
+- ../../base/esp
+- ../../base
+
+resources:
+- ingress.yaml
+- cloudendpoint.1.yaml
+- clusterissuer-prod.yaml
+- certificate.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+  # TODO: enable name suffix hash and use var ref to it in the cloud endpoint
+configMapGenerator:
+- files:
+  - spec=openapi-spec.yaml
+  name: openapi-spec
+
+patchesStrategicMerge:
+- esp-config.yaml
+
+patchesJson6902:
+- path: ingress-patch.yaml
+  target:
+    group: extensions
+    kind: Ingress
+    name: esp-gateway-ingress
+    version: v1beta1

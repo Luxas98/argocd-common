@@ -1,0 +1,10 @@
+# - op: add
+#   path: /annotations/nginx.ingress.kubernetes.io/upstream-vhost
+#   value: api-gateway.api-gateway.svc.cluster.local
+- op: add
+  path: /spec/rules/0/host
+  value: dev.endpoints.<DEV-PROJECT-ID>.cloud.goog
+- op: add
+  path: /spec/tls/0/hosts
+  value:
+    - dev.endpoints.<DEV-PROJECT-ID>.cloud.goog

@@ -1,0 +1,7 @@
+varReference:
+- kind: ClusterRoleBinding
+  path: subjects/name
+- kind: ServiceAccount
+  path: metadata/name
+- kind: Deployment
+  path: spec/template/spec/serviceAccountName

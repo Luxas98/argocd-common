@@ -1,0 +1,1262 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pulsar
+---
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: "pulsar-bookkeeper"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: bookkeeper
+    cluster: pulsar
+spec:
+  selector:
+    matchLabels:
+      app: pulsar
+      release: pulsar
+      component: bookkeeper
+  maxUnavailable: 1
+---
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: "pulsar-broker"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: broker
+    cluster: pulsar
+spec:
+  selector:
+    matchLabels:
+      app: pulsar
+      release: pulsar
+      component: broker
+  maxUnavailable: 1
+---
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: "pulsar-proxy"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: proxy
+    cluster: pulsar
+spec:
+  selector:
+    matchLabels:
+      app: pulsar
+      release: pulsar
+      component: proxy
+  maxUnavailable: 1
+---
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: "pulsar-zookeeper"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: zookeeper
+    cluster: pulsar
+spec:
+  selector:
+    matchLabels:
+      app: pulsar
+      release: pulsar
+      component: zookeeper
+  maxUnavailable: 1
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "pulsar-pulsar-manager-secret"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: pulsar-manager
+    cluster: pulsar
+type: Opaque
+data:
+  PULSAR_MANAGER_ADMIN_PASSWORD: cHVsc2Fy
+  PULSAR_MANAGER_ADMIN_USER: cHVsc2Fy
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "pulsar-autorecovery"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: autorecovery
+    cluster: pulsar
+data:
+  zkServers:
+    pulsar-zookeeper-0.pulsar-zookeeper,pulsar-zookeeper-1.pulsar-zookeeper,pulsar-zookeeper-2.pulsar-zookeeper
+  PULSAR_MEM: '" -Xms1g -Xmx1g "'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "pulsar-bastion"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: bastion
+    cluster: pulsar
+data:
+  PULSAR_MEM: '"-Xms1g -Xmx1g -XX:MaxDirectMemorySize=1g"'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "pulsar-bookkeeper"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: bookkeeper
+    cluster: pulsar
+data:
+  zkServers:
+    pulsar-zookeeper-0.pulsar-zookeeper,pulsar-zookeeper-1.pulsar-zookeeper,pulsar-zookeeper-2.pulsar-zookeeper
+  # disable auto recovery on bookies since we will start AutoRecovery in separated pods
+  autoRecoveryDaemonEnabled: "false"
+  PULSAR_MEM: '"-Xms15g -Xmx15g -XX:MaxDirectMemorySize=15g -Dio.netty.leakDetectionLevel=disabled
+    -Dio.netty.recycler.linkCapacity=1024 -XX:+UseG1GC -XX:MaxGCPauseMillis=10 -XX:+ParallelRefProcEnabled
+    -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:ParallelGCThreads=32
+    -XX:ConcGCThreads=32 -XX:G1NewSizePercent=50 -XX:+DisableExplicitGC -XX:-ResizePLAB
+    -XX:+ExitOnOutOfMemoryError -XX:+PerfDisableSharedMem -XX:+PrintGCDetails -XX:+PrintGCTimeStamps
+    -XX:+PrintGCApplicationStoppedTime -XX:+PrintHeapAtGC -verbosegc -XX:G1LogLevel=finest"'
+  PULSAR_PREFIX_dbStorage_readAheadCacheMaxSizeMb: "2048"
+  PULSAR_PREFIX_dbStorage_rocksDB_blockCacheSize: "268435456"
+  PULSAR_PREFIX_dbStorage_writeCacheMaxSizeMb: "2048"
+  PULSAR_PREFIX_journalMaxSizeMB: "2048"
+  PULSAR_PREFIX_statsProviderClass: org.apache.bookkeeper.stats.prometheus.PrometheusMetricsProvider
+  useHostNameAsBookieID: "true"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "pulsar-broker"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: broker
+    cluster: pulsar
+data:
+  zookeeperServers:
+    pulsar-zookeeper-0.pulsar-zookeeper,pulsar-zookeeper-1.pulsar-zookeeper,pulsar-zookeeper-2.pulsar-zookeeper
+  configurationStoreServers:
+    pulsar-zookeeper-0.pulsar-zookeeper,pulsar-zookeeper-1.pulsar-zookeeper,pulsar-zookeeper-2.pulsar-zookeeper
+  clusterName: pulsar
+  functionsWorkerEnabled: "true"
+  PF_pulsarFunctionsCluster: pulsar
+  PULSAR_GC: '"-XX:+UseG1GC -XX:MaxGCPauseMillis=10"'
+  PULSAR_MEM: '"-Xms15g -Xmx15g -XX:MaxDirectMemorySize=15g -Dio.netty.leakDetectionLevel=disabled
+    -Dio.netty.recycler.linkCapacity=1024 -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions
+    -XX:+AggressiveOpts -XX:+DoEscapeAnalysis -XX:ParallelGCThreads=32 -XX:ConcGCThreads=32
+    -XX:G1NewSizePercent=50 -XX:+DisableExplicitGC -XX:-ResizePLAB -XX:+ExitOnOutOfMemoryError
+    -XX:+PerfDisableSharedMem"'
+  PULSAR_PREFIX_deduplicationEnabled: "false"
+  PULSAR_PREFIX_exposeTopicLevelMetricsInPrometheus: "true"
+  PULSAR_PREFIX_managedLedgerDefaultAckQuorum: "2"
+  PULSAR_PREFIX_managedLedgerDefaultEnsembleSize: "3"
+  PULSAR_PREFIX_managedLedgerDefaultWriteQuorum: "3"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "pulsar-prometheus"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: prometheus
+    cluster: pulsar
+data:
+  # Include prometheus configuration file, setup to monitor all the
+  # Kubernetes pods with the "scrape=true" annotation.
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+    scrape_configs:
+    - job_name: 'prometheus'
+      static_configs:
+      - targets: ['localhost:9090']
+    - job_name: 'kubernetes-pods'
+      kubernetes_sd_configs:
+      - role: pod
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - source_labels: [__meta_kubernetes_namespace]
+        action: replace
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_pod_label_component]
+        action: replace
+        target_label: job
+      - source_labels: [__meta_kubernetes_pod_name]
+        action: replace
+        target_label: kubernetes_pod_name
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "pulsar-proxy"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: proxy
+    cluster: pulsar
+data:
+  zookeeperServers:
+    pulsar-zookeeper-0.pulsar-zookeeper,pulsar-zookeeper-1.pulsar-zookeeper,pulsar-zookeeper-2.pulsar-zookeeper
+  configurationStoreServers:
+    pulsar-zookeeper-0.pulsar-zookeeper,pulsar-zookeeper-1.pulsar-zookeeper,pulsar-zookeeper-2.pulsar-zookeeper
+  clusterName: pulsar
+  PULSAR_MEM: '"-Xms4g -Xmx4g -XX:MaxDirectMemorySize=4g"'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "pulsar-zookeeper"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: zookeeper
+    cluster: pulsar
+data:
+  PULSAR_GC: '"-XX:+UseG1GC -XX:MaxGCPauseMillis=10"'
+  PULSAR_MEM: '"-Xms15g -Xmx15g -Dcom.sun.management.jmxremote -Djute.maxbuffer=10485760
+    -XX:+ParallelRefProcEnabled -XX:+UnlockExperimentalVMOptions -XX:+AggressiveOpts
+    -XX:+DoEscapeAnalysis -XX:+DisableExplicitGC -XX:+PerfDisableSharedMem -Dzookeeper.forceSync=no"'
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: "pulsar-prometheus-data"
+  namespace: pulsar
+spec:
+  resources:
+    requests:
+      storage: 5Gi
+    limits:
+      storage: 10Gi
+  storageClassName: pulsar-prom-local-ssd
+  accessModes: [ "ReadWriteOnce" ]
+---
+# Source: pulsar/templates/prometheus-rbac.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "pulsar-prometheus"
+  namespace: pulsar
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: "pulsar-prometheus"
+rules:
+- apiGroups: [""]
+  resources:
+  - nodes
+  - nodes/proxy
+  - services
+  - endpoints
+  - pods
+  verbs: ["get", "list", "watch"]
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: "pulsar-prometheus"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: "pulsar-prometheus"
+subjects:
+- kind: ServiceAccount
+  name: "pulsar-prometheus"
+  namespace: pulsar
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "pulsar-bookkeeper"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: bookkeeper
+    cluster: pulsar
+  annotations:
+    publishNotReadyAddresses: "true"
+spec:
+  ports:
+  - name: server
+    port: 3181
+  clusterIP: None
+  selector:
+    app: pulsar
+    release: pulsar
+    component: bookkeeper
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "pulsar-broker"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: broker
+    cluster: pulsar
+  annotations:
+    {}
+spec:
+  ports:
+  - name: http
+    port: 8080
+  - name: pulsar
+    port: 6650
+  clusterIP: None
+  selector:
+    app: pulsar
+    release: pulsar
+    component: broker
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "pulsar-grafana"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: grafana
+    cluster: pulsar
+  annotations:
+    {}
+spec:
+  ports:
+  - name: server
+    port: 3000
+  clusterIP: None
+  selector:
+    app: pulsar
+    release: pulsar
+    component: grafana
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "pulsar-prometheus"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: prometheus
+    cluster: pulsar
+  annotations:
+    {}
+spec:
+  ports:
+  - name: server
+    port: 9090
+  clusterIP: None
+  selector:
+    app: pulsar
+    release: pulsar
+    component: prometheus
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "pulsar-proxy"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: proxy
+    cluster: pulsar
+  annotations:
+    {}
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    nodePort: 30001
+    port: 8080
+    protocol: TCP
+  - name: tcp
+    nodePort: 30002
+    port: 6650
+    protocol: TCP
+  selector:
+    app: pulsar
+    release: pulsar
+    component: proxy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "pulsar-pulsar-manager"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: pulsar-manager
+    cluster: pulsar
+  annotations:
+    {}
+spec:
+  type: LoadBalancer
+  ports:
+  - name: server
+    port: 9527
+  selector:
+    app: pulsar
+    release: pulsar
+    component: pulsar-manager
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "pulsar-zookeeper"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: zookeeper
+    cluster: pulsar
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  ports:
+  - name: server
+    port: 2888
+  - name: leader-election
+    port: 3888
+  - name: stats
+    port: 2181
+  clusterIP: None
+  selector:
+    app: pulsar
+    release: pulsar
+    component: zookeeper
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "pulsar-autorecovery"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: autorecovery
+    cluster: pulsar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pulsar
+      release: pulsar
+      component: autorecovery
+  template:
+    metadata:
+      labels:
+        app: pulsar
+        release: pulsar
+        component: autorecovery
+        cluster: pulsar
+      annotations:
+        {}
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: "app"
+                operator: In
+                values:
+                - "pulsar"
+              - key: "release"
+                operator: In
+                values:
+                - pulsar
+              - key: "component"
+                operator: In
+                values:
+                - bookkeeper
+            topologyKey: "kubernetes.io/hostname"
+      terminationGracePeriodSeconds: 0
+      initContainers:
+      # This init container will wait for zookeeper to be ready before
+      # deploying the bookies
+      - name: wait-zookeeper-ready
+        image: "apachepulsar/pulsar-all:latest"
+        imagePullPolicy: IfNotPresent
+        command: ["sh", "-c"]
+        args:
+          - >-
+            until bin/pulsar zookeeper-shell -server pulsar-zookeeper ls /admin/clusters/pulsar; do
+              sleep 3;
+            done;
+      containers:
+      - name: "pulsar-autorecovery"
+        image: "apachepulsar/pulsar-all:latest"
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 0.1
+            memory: 128Mi
+        command: ["sh", "-c"]
+        args:
+        - >
+          bin/apply-config-from-env.py conf/bookkeeper.conf &&
+          bin/bookkeeper autorecovery
+        envFrom:
+        - configMapRef:
+            name: "pulsar-autorecovery"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "pulsar-bastion"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: bastion
+    cluster: pulsar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pulsar
+      release: pulsar
+      component: bastion
+  template:
+    metadata:
+      labels:
+        app: pulsar
+        release: pulsar
+        component: bastion
+        cluster: pulsar
+      annotations:
+        {}
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+      - name: "pulsar-bastion"
+        image: "apachepulsar/pulsar-all:latest"
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 0.1
+            memory: 256Mi
+        command: ["sh", "-c"]
+        args:
+        - >
+          bin/apply-config-from-env.py conf/client.conf &&
+          sleep 10000000000
+        envFrom:
+        - configMapRef:
+            name: "pulsar-bastion"
+        env:
+        - name: webServiceUrl
+          value: http://pulsar-broker:8080/
+        - name: brokerServiceUrl
+          value: pulsar://pulsar-broker:6650/
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "pulsar-broker"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: broker
+    cluster: pulsar
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: pulsar
+      release: pulsar
+      component: broker
+  template:
+    metadata:
+      labels:
+        app: pulsar
+        release: pulsar
+        component: broker
+        cluster: pulsar
+      annotations:
+        prometheus.io/port: "8080"
+        prometheus.io/scrape: "true"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: "app"
+                operator: In
+                values:
+                - "pulsar"
+              - key: "release"
+                operator: In
+                values:
+                - pulsar
+              - key: "component"
+                operator: In
+                values:
+                - broker
+            topologyKey: "kubernetes.io/hostname"
+      terminationGracePeriodSeconds: 0
+      initContainers:
+      # This init container will wait for zookeeper to be ready before
+      # deploying the bookies
+      - name: wait-zookeeper-ready
+        image: "apachepulsar/pulsar-all:latest"
+        imagePullPolicy: IfNotPresent
+        command: ["sh", "-c"]
+        args:
+          - >-
+            until bin/pulsar zookeeper-shell -server pulsar-zookeeper ls /admin/clusters/pulsar; do
+              sleep 3;
+            done;
+      # This init container will wait for bookkeeper to be ready before
+      # deploying the broker
+      - name: wait-bookkeeper-ready
+        image: "apachepulsar/pulsar-all:latest"
+        imagePullPolicy: IfNotPresent
+        command: ["sh", "-c"]
+        args:
+          - >-
+            bin/apply-config-from-env.py conf/bookkeeper.conf &&
+            until bin/bookkeeper shell simpletest -ensemble 3; do
+              sleep 3;
+            done;
+      containers:
+      - name: "pulsar-broker"
+        image: "apachepulsar/pulsar-all:latest"
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 0.3
+            memory: 256Mi
+        command: ["sh", "-c"]
+        args:
+        - >
+          bin/apply-config-from-env.py conf/broker.conf &&
+          bin/apply-config-from-env.py conf/pulsar_env.sh &&
+          bin/gen-yml-from-env.py conf/functions_worker.yml &&
+          bin/pulsar broker
+        ports:
+        - name: http
+          containerPort: 8080
+        - name: pulsar
+          containerPort: 6650
+        envFrom:
+        - configMapRef:
+            name: "pulsar-broker"
+        env:
+        - name: advertisedAddress
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "pulsar-grafana"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: grafana
+    cluster: pulsar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pulsar
+      release: pulsar
+      component: grafana
+  template:
+    metadata:
+      labels:
+        app: pulsar
+        release: pulsar
+        component: grafana
+        cluster: pulsar
+      annotations:
+        {}
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+      - name: "pulsar-grafana"
+        image: "apachepulsar/pulsar-grafana:latest"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+        env:
+        - name: PROMETHEUS_URL
+          value: http://pulsar-prometheus:9090/
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "pulsar-prometheus"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: prometheus
+    cluster: pulsar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pulsar
+      release: pulsar
+      component: prometheus
+  template:
+    metadata:
+      labels:
+        app: pulsar
+        release: pulsar
+        component: prometheus
+        cluster: pulsar
+      annotations:
+        {}
+    spec:
+      serviceAccount: "pulsar-prometheus"
+      terminationGracePeriodSeconds: 0
+      containers:
+      - name: "pulsar-prometheus"
+        image: "prom/prometheus:v1.6.3"
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 0.2
+            memory: 128Mi
+        ports:
+        - containerPort: 9090
+        volumeMounts:
+        - name: "pulsar-prometheus-config"
+          mountPath: /etc/prometheus
+        - name: "pulsar-prometheus-data"
+          mountPath: /prometheus
+      volumes:
+      - name: "pulsar-prometheus-config"
+        configMap:
+          name: "pulsar-prometheus"
+      - name: "pulsar-prometheus-data"
+        persistentVolumeClaim:
+          claimName: "pulsar-prometheus-data"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "pulsar-proxy"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: proxy
+    cluster: pulsar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pulsar
+      release: pulsar
+      component: proxy
+  template:
+    metadata:
+      labels:
+        app: pulsar
+        release: pulsar
+        component: proxy
+        cluster: pulsar
+      annotations:
+        prometheus.io/port: "8080"
+        prometheus.io/scrape: "true"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: "app"
+                operator: In
+                values:
+                - "pulsar"
+              - key: "release"
+                operator: In
+                values:
+                - pulsar
+              - key: "component"
+                operator: In
+                values:
+                - proxy
+            topologyKey: "kubernetes.io/hostname"
+      terminationGracePeriodSeconds: 0
+      initContainers:
+      # This init container will wait for zookeeper to be ready before
+      # deploying the bookies
+      - name: wait-zookeeper-ready
+        image: "apachepulsar/pulsar-all:latest"
+        imagePullPolicy: IfNotPresent
+        command: ["sh", "-c"]
+        args:
+          - >-
+            until bin/pulsar zookeeper-shell -server pulsar-zookeeper ls /admin/clusters/pulsar; do
+              sleep 3;
+            done;
+      containers:
+      - name: "pulsar-proxy"
+        image: "apachepulsar/pulsar-all:latest"
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 0.2
+            memory: 128Mi
+        command: ["sh", "-c"]
+        args:
+        - >
+          bin/apply-config-from-env.py conf/proxy.conf &&
+          bin/apply-config-from-env.py conf/pulsar_env.sh &&
+          bin/pulsar proxy
+        ports:
+        - name: http
+          containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: "pulsar-proxy"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "pulsar-pulsar-manager"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: pulsar-manager
+    cluster: pulsar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pulsar
+      release: pulsar
+      component: pulsar-manager
+  template:
+    metadata:
+      labels:
+        app: pulsar
+        release: pulsar
+        component: pulsar-manager
+        cluster: pulsar
+      annotations:
+        {}
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+        - name: "pulsar-pulsar-manager"
+          image: "apachepulsar/pulsar-manager:v0.1.0"
+          imagePullPolicy: IfNotPresent
+          ports:
+          - containerPort: 9527
+          volumeMounts:
+          - name: pulsar-manager-data
+            mountPath: /data
+          env:
+          # for supporting apachepulsar/pulsar-manager
+          - name: PULSAR_CLUSTER
+            value: pulsar
+          - name: REDIRECT_HOST
+            value: http://127.0.0.1
+          - name: REDIRECT_PORT
+            value: "9527"
+          - name: DRIVER_CLASS_NAME
+            value: org.postgresql.Driver
+          - name: URL
+            value: jdbc:postgresql://127.0.0.1:5432/pulsar_manager
+          - name: USERNAME
+            valueFrom:
+              secretKeyRef:
+                key: PULSAR_MANAGER_ADMIN_USER
+                name: "pulsar-pulsar-manager-secret"
+          - name: PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: PULSAR_MANAGER_ADMIN_PASSWORD
+                name: "pulsar-pulsar-manager-secret"
+          - name: LOG_LEVEL
+            value: DEBUG
+      volumes:
+        - name: pulsar-manager-data
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: "pulsar-bookkeeper"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: bookkeeper
+    cluster: pulsar
+spec:
+  serviceName: "pulsar-bookkeeper"
+  replicas: 3
+  selector:
+    matchLabels:
+      app: pulsar
+      release: pulsar
+      component: bookkeeper
+  updateStrategy:
+    type: OnDelete
+  podManagementPolicy: OrderedReady
+  template:
+    metadata:
+      labels:
+        app: pulsar
+        release: pulsar
+        component: bookkeeper
+        cluster: pulsar
+      annotations:
+        prometheus.io/port: "8000"
+        prometheus.io/scrape: "true"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: "app"
+                operator: In
+                values:
+                - "pulsar"
+              - key: "release"
+                operator: In
+                values:
+                - pulsar
+              - key: "component"
+                operator: In
+                values:
+                - bookkeeper
+            topologyKey: "kubernetes.io/hostname"
+      terminationGracePeriodSeconds: 0
+      initContainers:
+      # This init container will wait for zookeeper to be ready before
+      # deploying the bookies
+      - name: wait-zookeeper-ready
+        image: "apachepulsar/pulsar-all:latest"
+        imagePullPolicy: IfNotPresent
+        command: ["sh", "-c"]
+        args:
+          - >-
+            until bin/pulsar zookeeper-shell -server pulsar-zookeeper ls /admin/clusters/pulsar; do
+              sleep 3;
+            done;
+      # This initContainer will make sure that the bookeeper
+      # metadata is in zookeeper
+      - name: pulsar-bookkeeper-metaformat
+        image: "apachepulsar/pulsar-all:latest"
+        imagePullPolicy: IfNotPresent
+        command: ["sh", "-c"]
+        args:
+        - >
+          bin/apply-config-from-env.py conf/bookkeeper.conf &&
+          bin/bookkeeper shell metaformat --nonInteractive || true;
+        envFrom:
+        - configMapRef:
+            name: "pulsar-bookkeeper"
+      containers:
+      - name: "pulsar-bookkeeper"
+        image: "apachepulsar/pulsar-all:latest"
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 0.4
+            memory: 256Mi
+        command: ["sh", "-c"]
+        args:
+        - >
+          bin/apply-config-from-env.py conf/bookkeeper.conf &&
+          bin/apply-config-from-env.py conf/pulsar_env.sh &&
+          bin/pulsar bookie
+        ports:
+        - name: client
+          containerPort: 3181
+        envFrom:
+        - configMapRef:
+            name: "pulsar-bookkeeper"
+        volumeMounts:
+        - name: "pulsar-bookkeeper-journal"
+          mountPath: /pulsar/data/bookkeeper/journal
+        - name: "pulsar-bookkeeper-ledgers"
+          mountPath: /pulsar/data/bookkeeper/ledgers
+  volumeClaimTemplates:
+  - metadata:
+      name: "pulsar-bookkeeper-journal"
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 2Gi
+        limits:
+          storage: 4Gi
+      storageClassName: "pulsar-bookkeeper-journal-local-ssd"
+  - metadata:
+      name: "pulsar-bookkeeper-ledgers"
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 2Gi
+        limits:
+          storage: 4Gi
+      storageClassName: "pulsar-bookkeeper-ledgers-local-ssd"
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: "pulsar-zookeeper"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: zookeeper
+    cluster: pulsar
+spec:
+  serviceName: "pulsar-zookeeper"
+  replicas: 3
+  selector:
+    matchLabels:
+      app: pulsar
+      release: pulsar
+      component: zookeeper
+  updateStrategy:
+    type: OnDelete
+  podManagementPolicy: OrderedReady
+  template:
+    metadata:
+      labels:
+        app: pulsar
+        release: pulsar
+        component: zookeeper
+        cluster: pulsar
+      annotations:
+        prometheus.io/port: "8000"
+        prometheus.io/scrape: "true"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: "app"
+                operator: In
+                values:
+                - "pulsar"
+              - key: "release"
+                operator: In
+                values:
+                - pulsar
+              - key: "component"
+                operator: In
+                values:
+                - zookeeper
+            topologyKey: "kubernetes.io/hostname"
+      terminationGracePeriodSeconds: 0
+      containers:
+      - name: "pulsar-zookeeper"
+        image: "apachepulsar/pulsar-all:latest"
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 0.1
+            memory: 128Mi
+        command: ["sh", "-c"]
+        args:
+        - >
+          bin/apply-config-from-env.py conf/zookeeper.conf &&
+          bin/apply-config-from-env.py conf/pulsar_env.sh &&
+          bin/generate-zookeeper-config.sh conf/zookeeper.conf &&
+          bin/pulsar zookeeper
+        ports:
+        - name: client
+          containerPort: 2181
+        - name: server
+          containerPort: 2888
+        - name: leader-election
+          containerPort: 3888
+        env:
+        - name: ZOOKEEPER_SERVERS
+          value:
+            pulsar-zookeeper-0,pulsar-zookeeper-1,pulsar-zookeeper-2
+        envFrom:
+        - configMapRef:
+            name: "pulsar-zookeeper"
+        readinessProbe:
+          exec:
+            command:
+            - "bin/pulsar-zookeeper-ruok.sh"
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - "bin/pulsar-zookeeper-ruok.sh"
+          initialDelaySeconds: 15
+          timeoutSeconds: 5
+        volumeMounts:
+        - name: "pulsar-zookeeper-data"
+          mountPath: /pulsar/data
+  volumeClaimTemplates:
+  - metadata:
+      name: "pulsar-zookeeper-data"
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi
+        limits:
+          storage: 20Gi
+      storageClassName: "pulsar-zookeeper-local-ssd"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "pulsar-zookeeper-metadata"
+  namespace: pulsar
+  labels:
+    app: pulsar
+    chart: pulsar-1.0.0
+    release: pulsar
+    heritage: Helm
+    component: zookeeper-metadata
+    cluster: pulsar
+spec:
+  template:
+    spec:
+      initContainers:
+      - name: wait-zookeeper-ready
+        image: "apachepulsar/pulsar-all:latest"
+        imagePullPolicy: IfNotPresent
+        command: ["sh", "-c"]
+        args:
+          - >-
+            until nslookup pulsar-zookeeper-2.pulsar-zookeeper.pulsar; do
+              sleep 3;
+            done;
+      containers:
+      - name: "pulsar-zookeeper-metadata"
+        image: "apachepulsar/pulsar-all:latest"
+        imagePullPolicy: IfNotPresent
+        command: ["sh", "-c"]
+        args:
+          - >
+            bin/pulsar initialize-cluster-metadata \
+              --cluster pulsar \
+              --zookeeper pulsar-zookeeper \
+              --configuration-store pulsar-zookeeper \
+              --web-service-url http://pulsar-broker.pulsar.svc.cluster.local:8080/ \
+              --broker-service-url pulsar://pulsar-broker.pulsar.svc.cluster.local:6650/ || true;
+      restartPolicy: Never
