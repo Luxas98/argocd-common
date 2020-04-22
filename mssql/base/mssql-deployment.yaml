@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mssql
+spec:
+  selector:
+    matchLabels:
+      app: mssql
+  template:
+    metadata:
+      labels:
+        app: mssql
+    spec:
+      volumes:
+      - name: mssqldata
+        persistentVolumeClaim:
+          claimName: mssql-pv-claim
+      containers:
+      - name: mssql
+        image: microsoft/mssql-server-linux:2017-latest
+        volumeMounts:
+        - name: mssqldata
+          mountPath: "/var/opt/mssql"
+        env:
+          - name: ACCEPT_EULA
+            value: "Y"
+          - name: MSSQL_SA_PASSWORD
+            value: "Password123"
+          - name: MSSQL_PID
+            value: "Developer"
+        ports:
+        - containerPort: 1433

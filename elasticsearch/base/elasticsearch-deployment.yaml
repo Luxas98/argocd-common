@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticsearch
+spec:
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      containers:
+      - name: elasticsearch
+        image: elasticsearch:7.6.0
+        env:
+          - name: discovery.type
+            value: "single-node"
+          - name: cluster.name
+            value: "elasticsearch"
+          - name: bootstrap.memory_lock
+            value: "true"
+          - name: ES_JAVA_OPTS
+            value: "-Xms1024m -Xmx1024m"
+          - name: http.cors.enabled
+            value: "true"
+          - name: http.cors.allow-origin
+            value: "http://localhost:1358,http://127.0.0.1:1358"
+          - name: http.cors.allow-headers
+            value: "X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization"
+          - name: http.cors.allow-credentials
+            value: "true"
+
+        ports:
+        - containerPort: 9200
+        - containerPort: 9300
